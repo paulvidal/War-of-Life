@@ -305,27 +305,29 @@ get_min_score(PlayerColour, [Config | Configs], CurrentMinScore, MinScore) :-
 % [r1,c1,r2,c2] where (r1,c1) represent the piece position before moving and 
 % (r2,c2) after moving. The second element is the new board obtained 
 % after performing the move.
-%
+
 get_all_configs_for_player('b', [PlayerPieces, OpponentPieces], AllConfigs) :-
   findall([Move, [NewPlayerPieces, OpponentPieces]],
-          (member([A,B], PlayerPieces),
-           neighbour_position(A,B,[NewA, NewB]),
-	       \+ member([NewA,NewB], PlayerPieces),
-	       \+ member([NewA,NewB], OpponentPieces),
-           Move = [A, B, NewA, NewB],
-           alter_board(Move, PlayerPieces, NewPlayerPieces)
-          ),
+          get_configs(PlayerPieces, OpponentPieces, Move, NewPlayerPieces),
 	      AllConfigs).
 get_all_configs_for_player('r', [OpponentPieces, PlayerPieces], AllConfigs) :-
   findall([Move, [OpponentPieces, NewPlayerPieces]],
-          (member([A,B], PlayerPieces),
-           neighbour_position(A,B,[NewA, NewB]),
-	       \+ member([NewA,NewB], PlayerPieces),
-	       \+ member([NewA,NewB], OpponentPieces),
-           Move = [A, B, NewA, NewB],
-           alter_board(Move, PlayerPieces, NewPlayerPieces)
-          ),
+          get_configs(PlayerPieces, OpponentPieces, Move, NewPlayerPieces), 
 	      AllConfigs).
+
+get_configs(PlayerPieces, OpponentPieces, Move, NewPlayerPieces) :-
+  get_valid_move(PlayerPieces, OpponentPieces, Move),
+  alter_board(Move, PlayerPieces, NewPlayerPieces).
+
+get_valid_move(PlayerPieces, OpponentPieces, Move) :-
+  member([A,B], PlayerPieces),
+  neighbour_position(A,B,[NewA, NewB]),
+  Move = [A, B, NewA, NewB],
+  check_valid_move(NewA, NewB, PlayerPieces, OpponentPieces).
+
+check_valid_move(NewA, NewB, PlayerPieces, OpponentPieces) :-
+  \+ member([NewA,NewB], PlayerPieces),
+  \+ member([NewA,NewB], OpponentPieces).
 
 % DEBUGGING
 print_configs([]).
