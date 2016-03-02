@@ -80,6 +80,7 @@ is_draw('stalemate').
 is_draw('draw').
 
 % Get the longest non exhaustive game in term of moves
+get_longest_game('exhaust', _, LongestGame, LongestGame).
 get_longest_game(WinningPlayer, NumMoves, LongestGame, NumMoves) :-
   WinningPlayer \= 'exhaust',
   LongestGame < NumMoves.
@@ -224,7 +225,7 @@ compute_score(Strategy, 'r', [OpponentPieces, Pieces], Score) :-
 
 % bloodlust gives back a Score representing the difference between the
 % Opponent pieces after generation and before generation
-compute_score(bloodlust, BoardStateAfterMove,  Score) :-
+compute_score(bloodlust, BoardStateAfterMove, Score) :-
   [_, OpponentPiecesBeforeMove] = BoardStateAfterMove,
   next_generation(BoardStateAfterMove, NewBoardState),
   [_, OpponentPiecesAfterGeneration] = NewBoardState,
@@ -233,7 +234,7 @@ compute_score(bloodlust, BoardStateAfterMove,  Score) :-
 
 % self_preservation gives back a Score representing the difference between the
 % Player pieces after generation and before generation
-compute_score(self_preservation, BoardStateAfterMove,  Score) :-
+compute_score(self_preservation, BoardStateAfterMove, Score) :-
   [PiecesAfterMove, _] = BoardStateAfterMove,
   next_generation(BoardStateAfterMove, NewBoardState),
   [PlayerPiecesAfterGeneration, _] = NewBoardState,
@@ -242,7 +243,7 @@ compute_score(self_preservation, BoardStateAfterMove,  Score) :-
 
 % self_preservation gives back a Score representing the difference between the
 % Player pieces after generation and the Opponent pieces after generation
-compute_score(land_grab, BoardStateAfterMove,  Score) :-
+compute_score(land_grab, BoardStateAfterMove, Score) :-
   next_generation(BoardStateAfterMove, NewBoardState),
   [PlayerPiecesAfterGeneration, OpponentPiecesAfterGeneration] = NewBoardState,
   compute_pieces_difference(PlayerPiecesAfterGeneration,
