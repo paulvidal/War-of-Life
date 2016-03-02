@@ -39,7 +39,7 @@ simulate_games(N, S1, S2, WinsP1, WinsP2, Draws, LongestGame, ShortestGame,
   get_longest_game(WinningPlayer, NumMoves, LongestGame, NewLongestGame),
 
   % Get the shortest game
-  get_shortest_game(NumMoves, ShortestGame, ShortestGame),
+  get_shortest_game(NumMoves, ShortestGame, NewShortestGame),
 
   % Get the new total game length and time
   NewTotalGameLength is TotalGameLength + NumMoves,
@@ -81,7 +81,7 @@ is_draw('draw').
 get_longest_game(WinningPlayer, NumMoves, LongestGame, NumMoves) :-
   WinningPlayer \= 'exhaust',
   LongestGame < NumMoves.
-get_longest_game(WinningPlayer, NumMoves, LongestGame, LongestGame) :-
+get_longest_game(_, NumMoves, LongestGame, LongestGame) :-
   LongestGame >= NumMoves.
 
 % Get the shortest game in term of moves
@@ -95,18 +95,21 @@ get_shortest_game(NumMoves, ShortestGame, ShortestGame) :-
 print_progression(N, TotalGames) :-
   format('~w out of ~w~n', [N, TotalGames]).
 
-% ---------------------------- BLOODLUST -----------------------------------
+% ---------------------------------------------------------------------------
+% ---------------------------- BLOODLUST ------------------------------------
 
 bloodlust(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
   get_best_config(bloodlust, PlayerColour, CurrentBoardState, [
       Move, NewBoardState]).
 
-% ------------------------ SELF PRESERVATION -------------------------------
+% ---------------------------------------------------------------------------
+% ------------------------ SELF PRESERVATION --------------------------------
 
 self_preservation(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
   get_best_config(self_preservation, PlayerColour, CurrentBoardState, [
       Move, NewBoardState]).
 
+% ---------------------------------------------------------------------------
 % ---------------------------- LAND GRAB ------------------------------------
 
 land_grab(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
@@ -130,78 +133,77 @@ get_best_config(Strategy, PlayerColour, CurrentBoardState, [Config | Configs],
   get_best_config(Strategy, PlayerColour, CurrentBoardState,
       Configs, NewCurrentBestScore, NewCurrentBestConfig, BestConfig).
 
-get_current_best_score_and_config(Score, CurrentBestScore, Config,
-    _, NewCurrentBestScore, NewCurrentBestConfig) :-
-  Score > CurrentBestScore,
-  NewCurrentBestScore = Score,
-  NewCurrentBestConfig = Config.
+get_current_best_score_and_config(Score, CurrentBestScore, Config, _,
+    Score, Config) :-
+  Score > CurrentBestScore.
 get_current_best_score_and_config(Score, CurrentBestScore, _,
-    CurrentBestConfig, NewCurrentBestScore, NewCurrentBestConfig) :-
-  Score =< CurrentBestScore,
-  NewCurrentBestScore = CurrentBestScore,
-  NewCurrentBestConfig = CurrentBestConfig.
+    CurrentBestConfig, CurrentBestScore, CurrentBestConfig) :-
+  Score =< CurrentBestScore.
 
 % ---------------------------------------------------------------------------
 % --------------------------- MINIMAX ---------------------------------------
 
 minimax(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
-  perform_max(PlayerColour, CurrentBoardState, [Move, NewBoardState]).
+  maximise(PlayerColour, CurrentBoardState, [Move, NewBoardState]).
 
-perform_max(PlayerColour, CurrentBoardState, BestConfig) :-
+maximise(PlayerColour, CurrentBoardState, BestConfig) :-
   get_all_configs(PlayerColour, CurrentBoardState, AllConfigs),
   swap_players(PlayerColour, NextPlayerColour),
   get_max(NextPlayerColour, AllConfigs, 100, [], BestConfig).
 
 % We take the minimal score of the opponent that we can get out of a move,
-% that maximises our chances off wining.
+% that maximises our chances off wining. The CurrentBestMinScore represents the
+% current most interesting score, as it is the smallest the opponent can perform
 get_max(_, [], _, BestConfig, BestConfig).
 get_max(PlayerColour, [Config | Configs], CurrentBestMinScore,
     CurrentBestConfig, BestConfig) :-
   [_, BoardStateAfterMove] = Config,
   next_generation(BoardStateAfterMove, BoardStateAfterGeneration),
-  perform_min(PlayerColour, BoardStateAfterGeneration,
+  minimise(PlayerColour, BoardStateAfterGeneration,
       CurrentBestMinScore, MinScore),
-  (
-    (MinScore < CurrentBestMinScore,
-     NewCurrentBestMinScore = MinScore,
-     NewCurrentBestConfig = Config
-    );
-
-    (MinScore >= CurrentBestMinScore,
-     NewCurrentBestMinScore = CurrentBestMinScore,
-     NewCurrentBestConfig = CurrentBestConfig
-    )
-  ),
+  maximise_player_chance(MinScore, Config, CurrentBestMinScore,
+      CurrentBestConfig, NewCurrentBestMinScore, NewCurrentBestConfig),
   get_max(PlayerColour, Configs, NewCurrentBestMinScore,
       NewCurrentBestConfig, BestConfig).
 
-% The opponent takes the score that minimises our chances by taking the maximum
-% score out of the land-grab heuristic function
-perform_min(PlayerColour, BoardState, CurrentBestMinScore, MinScore) :-
-  get_all_configs(PlayerColour, BoardState, AllConfigs),
-  get_min(PlayerColour, AllConfigs, -100, CurrentBestMinScore, MinScore).
+% Get the best score possible from the player point of view (the minimum score
+% the opponent can acheive)
+maximise_player_chance(MinScore, Config, CurrentBestMinScore, _,
+    MinScore, Config) :-
+  MinScore < CurrentBestMinScore.
+maximise_player_chance(MinScore, _, CurrentBestMinScore, CurrentBestConfig,
+    CurrentBestMinScore, CurrentBestConfig) :-
+  MinScore >= CurrentBestMinScore.
 
-get_min(_, [], MinScore, _, MinScore).
-get_min(PlayerColour, [Config | Configs], CurrentMinScore,
-    CurrentBestMinScore, MinScore) :-
+% The opponent takes the score that minimises our chances by taking the maximum
+% score out of the land-grab heuristic function.
+% The CurrentWorstScore is the worst score acheived yet by the opponent,
+% depending on the first player move. It is used to acheive alpha-beta prunning
+% as if we find a score superior to the worst score, it would mean the opponent
+% can acheive an better move then the worst we found so we don't want continue
+% searching as it is not in our interest to perform the first move chosen
+minimise(PlayerColour, BoardState, CurrentWorstScore, MaxScore) :-
+  get_all_configs(PlayerColour, BoardState, AllConfigs),
+  get_min(PlayerColour, AllConfigs, -100, CurrentWorstScore, MaxScore).
+
+get_min(_, [], MaxScore, _, MaxScore).
+get_min(PlayerColour, [Config | Configs], CurrentMaxScore,
+    CurrentWorstScore, MaxScore) :-
   [_, BoardStateAfterMove] = Config,
   compute_score(land_grab, PlayerColour, BoardStateAfterMove, Score),
-  (
-    % alpha-beta prunning
-    (Score >= CurrentBestMinScore,
-     MinScore = 100
-    );
+  minimise_player_chance(Score, CurrentWorstScore,
+      CurrentMaxScore, NewCurrentBestMaxScore),
+  get_min(PlayerColour, Configs, NewCurrentBestMaxScore,
+      CurrentWorstScore, MaxScore).
 
-    (Score < CurrentBestMinScore,
-    ((Score > CurrentMinScore,
-     get_min(PlayerColour, Configs, Score, CurrentBestMinScore, MinScore)
-    );
-
-    (Score =< CurrentMinScore,
-     get_min(PlayerColour, Configs, CurrentMinScore, CurrentBestMinScore, MinScore)
-    ))
-    )
-  ).
+% Get the best score possible from the opponent point of view (performs
+% alpha-beta pruning as we stop if we see that Score >= CurrentWorstScore)
+minimise_player_chance(Score, CurrentWorstScore, _, 100) :-
+  Score >= CurrentWorstScore.
+minimise_player_chance(Score, _, CurrentMaxScore, Score) :-
+  Score > CurrentMaxScore.
+minimise_player_chance(Score, _, CurrentMaxScore, CurrentMaxScore) :-
+  Score =< CurrentMaxScore.
 
 % Swap players in order to perform opponent move
 swap_players('b', 'r').
@@ -285,5 +287,6 @@ check_valid_move(NewA, NewB, PlayerPieces, OpponentPieces) :-
 % DEBUGGING
 print_configs([]).
 print_configs([[Move, Board] | R]) :-
-  format('~w~n~w~n~n', [Move, Board]),
+  next_generation(Board, NewBoard),
+  format('~w~n~w~n~n', [Move, NewBoard]),
   print_configs(R).
