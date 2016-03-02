@@ -59,8 +59,10 @@ play_game(S1, S2, NumMoves, WinningPlayer, TimeTaken) :-
   TimeTaken is AfterTime - BeforeTime.
 
 % Calculate new player's score depending on the winning player
-new_player_score('r', 'b', Wins, Wins).
-new_player_score('b', 'r', Wins, Wins).
+new_player_score(PlayerScore, 'b', Wins, Wins) :-
+  PlayerScore \= 'b'.
+new_player_score(PlayerScore, 'r', Wins, Wins) :-
+  PlayerScore \= 'r'.
 new_player_score('b', 'b', Wins, NewWins) :-
   NewWins is Wins + 1.
 new_player_score('r', 'r', Wins, NewWins) :-
