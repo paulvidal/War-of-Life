@@ -1,12 +1,12 @@
 
-% test_strategy prints out the statistics after performing N games, 
-% using strategyP1 as the first Player strategy and 
+% test_strategy prints out the statistics after performing N games,
+% using strategyP1 as the first Player strategy and
 % using strategyP2 as the second Player strategy
 test_strategy(N, StrategyP1, StrategyP2) :-
   N > 0,
   simulate_games(N, StrategyP1, StrategyP2, 0, 0, 0, 0, 250, 0, 0, N).
 
-% simulate_games is the helper function for test_strategy that computes all 
+% simulate_games is the helper function for test_strategy that computes all
 % the statictis necessary
 simulate_games(0, _, _, WinsP1, WinsP2, Draws, LongestGame, ShortestGame,
         TotalGameLength, TotalGameTime, TotalGames) :-
@@ -16,7 +16,7 @@ simulate_games(0, _, _, WinsP1, WinsP2, Draws, LongestGame, ShortestGame,
   format('Longest (non-exhaustive) game: ~w moves~n', [LongestGame]),
   format('Shortest Game : ~w moves~n', [ShortestGame]),
   AvgGameLengthStat is TotalGameLength / TotalGames,
-  format('Average game length : ~w moves~n', [AvgGameLengthStat]), 
+  format('Average game length : ~w moves~n', [AvgGameLengthStat]),
   AvgGameTimeStat is TotalGameTime / TotalGames,
   format('Average game time: ~w ms~n', [AvgGameTimeStat]), !.
 
@@ -29,53 +29,53 @@ simulate_games(N, S1, S2, WinsP1, WinsP2, Draws, LongestGame, ShortestGame,
   TimeTaken is AfterTime - BeforeTime,
 
   (
-    (NewWinsP1 is WinsP1 + 1, 
+    (NewWinsP1 is WinsP1 + 1,
      WinningPlayer = 'b');
 
-    (NewWinsP1 is WinsP1, 
+    (NewWinsP1 is WinsP1,
      WinningPlayer \= 'b')
   ),
 
   (
-    (NewWinsP2 is WinsP2 + 1, 
+    (NewWinsP2 is WinsP2 + 1,
      WinningPlayer = 'r');
 
-    (NewWinsP2 is WinsP2, 
+    (NewWinsP2 is WinsP2,
      WinningPlayer \= 'r')
   ),
 
   (
-    (NewDraws is Draws+1, 
+    (NewDraws is Draws+1,
      (
-       WinningPlayer = 'exhaust'; 
-       WinningPlayer = 'stalemate'; 
+       WinningPlayer = 'exhaust';
+       WinningPlayer = 'stalemate';
        WinningPlayer = 'draw'
      )
     );
 
-    (NewDraws is Draws, 
+    (NewDraws is Draws,
      (
-       WinningPlayer \= 'exhaust'; 
-       WinningPlayer \= 'stalemate'; 
+       WinningPlayer \= 'exhaust';
+       WinningPlayer \= 'stalemate';
        WinningPlayer \= 'draw'
      )
     )
   ),
 
   (
-    (NewLongestGame is NumMoves, 
-     LongestGame < NumMoves, 
+    (NewLongestGame is NumMoves,
+     LongestGame < NumMoves,
      WinningPlayer \= 'exhaust');
 
-    (NewLongestGame is LongestGame, 
+    (NewLongestGame is LongestGame,
      NumMoves =< LongestGame)
   ),
 
   (
-    (NewShortestGame is NumMoves, 
+    (NewShortestGame is NumMoves,
      NumMoves < ShortestGame);
-   
-    (NewShortestGame is ShortestGame, 
+
+    (NewShortestGame is ShortestGame,
      ShortestGame =< NumMoves)
   ),
 
@@ -85,7 +85,7 @@ simulate_games(N, S1, S2, WinsP1, WinsP2, Draws, LongestGame, ShortestGame,
   simulate_games(NewN, S1, S2, NewWinsP1, NewWinsP2, NewDraws, NewLongestGame,
     NewShortestGame, NewTotalGameLength, NewTotalGameTime, TotalGames).
 
-% print_progression is a helper function printing on the sreen the number 
+% print_progression is a helper function printing on the sreen the number
 % of games left to play
 print_progression(N, TotalGames) :-
   format('~w out of ~w~n', [N, TotalGames]).
@@ -96,49 +96,26 @@ bloodlust(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
   get_all_configs_for_player(PlayerColour, CurrentBoardState, AllConfigs),
   [FstConfig | Configs] = AllConfigs,
   [_, BoardStateAfterMove] = FstConfig,
-  compute_bloodlust_score(PlayerColour, CurrentBoardState, 
-      BoardStateAfterMove, Score),
+  compute_score(bloodlust, PlayerColour, BoardStateAfterMove, Score),
   get_bloodlust_best_config(PlayerColour, CurrentBoardState,
       Configs, Score, FstConfig, [Move, NewBoardState]).
 
 get_bloodlust_best_config(_, _, [], _, BestConfig, BestConfig).
-get_bloodlust_best_config(PlayerColour, CurrentBoardState, 
+get_bloodlust_best_config(PlayerColour, CurrentBoardState,
     [Config | Configs], CurrentBestScore, CurrentBestConfig, BestConfig) :-
-  [_, NewBoardState] = Config,
-  compute_bloodlust_score(PlayerColour, CurrentBoardState, 
-      NewBoardState, Score),
+  [_, BoardStateAfterMove] = Config,
+  compute_score(bloodlust, PlayerColour, BoardStateAfterMove, Score),
   (
     (Score > CurrentBestScore,
-     get_bloodlust_best_config(PlayerColour, CurrentBoardState, 
+     get_bloodlust_best_config(PlayerColour, CurrentBoardState,
          Configs, Score, Config, BestConfig)
     );
 
-    (Score =< CurrentBestScore, 
+    (Score =< CurrentBestScore,
      get_bloodlust_best_config(PlayerColour, CurrentBoardState,
          Configs, CurrentBestScore, CurrentBestConfig, BestConfig)
     )
   ).
-
-compute_bloodlust_score('b', BoardStateBeforeMove, 
-    BoardStateAfterMove, Score) :-
-  [_, OpponentPiecesBeforeMove] = BoardStateBeforeMove,
-  length(OpponentPiecesBeforeMove, NumOpponentPiecesBeforeMove),
-
-  next_generation(BoardStateAfterMove, NewBoardState),
-  [_, OpponentPiecesAfterGeneration] = NewBoardState,
-  length(OpponentPiecesAfterGeneration, NumOpponentPiecesAfterGeneration),
-
-  Score is NumOpponentPiecesBeforeMove - NumOpponentPiecesAfterGeneration.
-compute_bloodlust_score('r', BoardStateBeforeMove, 
-    BoardStateAfterMove, Score) :-
-  [OpponentPiecesBeforeMove, _] = BoardStateBeforeMove,
-  length(OpponentPiecesBeforeMove, NumOpponentPiecesBeforeMove),
-
-  next_generation(BoardStateAfterMove, NewBoardState),
-  [OpponentPiecesAfterGeneration, _] = NewBoardState,
-  length(OpponentPiecesAfterGeneration, NumOpponentPiecesAfterGeneration),
-
-  Score is NumOpponentPiecesBeforeMove - NumOpponentPiecesAfterGeneration.
 
 % ------------------------ SELF PRESERVATION -------------------------------
 
@@ -146,49 +123,26 @@ self_preservation(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
   get_all_configs_for_player(PlayerColour, CurrentBoardState, AllConfigs),
   [FstConfig | Configs] = AllConfigs,
   [_, BoardStateAfterMove] = FstConfig,
-  compute_self_preservation_score(PlayerColour, CurrentBoardState, 
-      BoardStateAfterMove, Score),
+  compute_score(self_preservation, PlayerColour, BoardStateAfterMove, Score),
   get_self_preservation_best_config(PlayerColour, CurrentBoardState,
       Configs, Score, FstConfig, [Move, NewBoardState]).
 
 get_self_preservation_best_config(_, _, [], _, BestConfig, BestConfig).
-get_self_preservation_best_config(PlayerColour, CurrentBoardState, 
+get_self_preservation_best_config(PlayerColour, CurrentBoardState,
     [Config | Configs], CurrentBestScore, CurrentBestConfig, BestConfig) :-
-  [_, NewBoardState] = Config,
-  compute_self_preservation_score(PlayerColour, CurrentBoardState, 
-      NewBoardState, Score),
+  [_, BoardStateAfterMove] = Config,
+  compute_score(self_preservation, PlayerColour, BoardStateAfterMove, Score),
   (
     (Score > CurrentBestScore,
-     get_self_preservation_best_config(PlayerColour, CurrentBoardState, 
+     get_self_preservation_best_config(PlayerColour, CurrentBoardState,
          Configs, Score, Config, BestConfig)
     );
 
-    (Score =< CurrentBestScore, 
+    (Score =< CurrentBestScore,
      get_self_preservation_best_config(PlayerColour, CurrentBoardState,
          Configs, CurrentBestScore, CurrentBestConfig, BestConfig)
     )
   ).
-
-compute_self_preservation_score('b', BoardStateBeforeMove, 
-    BoardStateAfterMove, Score) :-
-  [PlayerPiecesBeforeMove, _] = BoardStateBeforeMove,
-  length(PlayerPiecesBeforeMove, NumPlayerPiecesBeforeMove),
-
-  next_generation(BoardStateAfterMove, NewBoardState),
-  [PlayerPiecesAfterGeneration, _] = NewBoardState,
-  length(PlayerPiecesAfterGeneration, NumPlayerPiecesAfterGeneration),
-
-  Score is NumPlayerPiecesAfterGeneration - NumPlayerPiecesBeforeMove.
-compute_self_preservation_score('r', BoardStateBeforeMove, 
-    BoardStateAfterMove, Score) :-
-  [_, PlayerPiecesBeforeMove] = BoardStateBeforeMove,
-  length(PlayerPiecesBeforeMove, NumPlayerPiecesBeforeMove),
-
-  next_generation(BoardStateAfterMove, NewBoardState),
-  [_, PlayerPiecesAfterGeneration] = NewBoardState,
-  length(PlayerPiecesAfterGeneration, NumPlayerPiecesAfterGeneration),
-
-  Score is NumPlayerPiecesAfterGeneration - NumPlayerPiecesBeforeMove.
 
 % ------------------------ LAND GRAB -------------------------------
 
@@ -196,45 +150,30 @@ land_grab(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
   get_all_configs_for_player(PlayerColour, CurrentBoardState, AllConfigs),
   [FstConfig | Configs] = AllConfigs,
   [_, BoardStateAfterMove] = FstConfig,
-  compute_land_grab_score(PlayerColour, BoardStateAfterMove, Score),
+  compute_score(land_grab, PlayerColour, BoardStateAfterMove, Score),
   get_land_grab_best_config(PlayerColour,
       Configs, Score, FstConfig, [Move, NewBoardState]).
 
 get_land_grab_best_config(_, [], _, BestConfig, BestConfig).
-get_land_grab_best_config(PlayerColour, 
+get_land_grab_best_config(PlayerColour,
     [Config | Configs], CurrentBestScore, CurrentBestConfig, BestConfig) :-
-  [_, NewBoardState] = Config,
-  compute_land_grab_score(PlayerColour, NewBoardState, Score),
+  [_, BoardStateAfterMove] = Config,
+  compute_score(land_grab, PlayerColour, BoardStateAfterMove, Score),
   (
     (Score > CurrentBestScore,
-     get_land_grab_best_config(PlayerColour, 
+     get_land_grab_best_config(PlayerColour,
          Configs, Score, Config, BestConfig)
     );
 
-    (Score =< CurrentBestScore, 
+    (Score =< CurrentBestScore,
      get_land_grab_best_config(PlayerColour,
          Configs, CurrentBestScore, CurrentBestConfig, BestConfig)
     )
   ).
 
-compute_land_grab_score('b', BoardStateAfterMove, Score) :-
-  next_generation(BoardStateAfterMove, NewBoardState),
-  [PlayerPiecesAfterGeneration, OpponentPiecesAfterGeneration] = NewBoardState,
-  length(PlayerPiecesAfterGeneration, NumPlayerPiecesAfterGeneration),
-  length(OpponentPiecesAfterGeneration, NumOpponentPiecesAfterGeneration),
-
-  Score is NumPlayerPiecesAfterGeneration - NumOpponentPiecesAfterGeneration.
-compute_land_grab_score('r', BoardStateAfterMove, Score) :-
-  next_generation(BoardStateAfterMove, NewBoardState),
-  [OpponentPiecesAfterGeneration, PlayerPiecesAfterGeneration] = NewBoardState,
-  length(PlayerPiecesAfterGeneration, NumPlayerPiecesAfterGeneration),
-  length(OpponentPiecesAfterGeneration, NumOpponentPiecesAfterGeneration),
-
-  Score is NumPlayerPiecesAfterGeneration - NumOpponentPiecesAfterGeneration.
-
 % --------------------------- MINIMAX ------------------------------------
 
-minimax(PlayerColour, CurrentBoardState, NewBoardState, Move) :- 
+minimax(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
   perform_max(PlayerColour, CurrentBoardState, NewBoardState, Move).
 
 perform_max(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
@@ -242,7 +181,7 @@ perform_max(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
   [FstConfig | Configs] = AllConfigs,
   [_, BoardStateAfterMove] = FstConfig,
   (
-    (PlayerColour == 'b', 
+    (PlayerColour == 'b',
      NextPlayerColour = 'r'
     );
 
@@ -257,7 +196,7 @@ perform_max(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
 % We take the minimal score of the opponent that we can get out of a move,
 % that maximises our chances off wining.
 get_max(_, [], _, BestConfig, BestConfig).
-get_max(PlayerColour, [Config | Configs], CurrentBestMinScore, 
+get_max(PlayerColour, [Config | Configs], CurrentBestMinScore,
     CurrentBestConfig, BestConfig) :-
   [_, BoardStateAfterMove] = Config,
   next_generation(BoardStateAfterMove, BoardStateAfterGeneration),
@@ -281,49 +220,79 @@ get_min(PlayerColour, BoardState, MinScore) :-
   get_all_configs_for_player(PlayerColour, BoardState, AllConfigs),
   [FstConfig | Configs] = AllConfigs,
   [_, BoardStateAfterMove] = FstConfig,
-  compute_land_grab_score(PlayerColour, BoardStateAfterMove, Score),
+  compute_score(land_grab, PlayerColour, BoardStateAfterMove, Score),
   get_min_score(PlayerColour, Configs, Score, MinScore).
 
 get_min_score(_, [], MinScore, MinScore).
 get_min_score(PlayerColour, [Config | Configs], CurrentMinScore, MinScore) :-
-  [_, NewBoardState] = Config,
-  compute_land_grab_score(PlayerColour, NewBoardState, Score),
+  [_, BoardStateAfterMove] = Config,
+  compute_score(land_grab, PlayerColour, BoardStateAfterMove, Score),
   (
     (Score > CurrentMinScore,
      get_min_score(PlayerColour, Configs, Score, MinScore)
     );
 
-    (Score =< CurrentMinScore, 
+    (Score =< CurrentMinScore,
      get_min_score(PlayerColour, Configs, CurrentMinScore, MinScore)
     )
   ).
 
+% --------------------------- COMPUTE SCORE -----------------------------------
+
+compute_score(Strategy, 'b', [Pieces, OpponentPieces], Score) :-
+  compute_score(Strategy, [Pieces, OpponentPieces], Score).
+compute_score(Strategy, 'r', [OpponentPieces, Pieces], Score) :-
+  compute_score(Strategy, [Pieces, OpponentPieces], Score).
+
+compute_score(bloodlust, BoardStateAfterMove,  Score) :-
+  [_, OpponentPiecesBeforeMove] = BoardStateAfterMove,
+  next_generation(BoardStateAfterMove, NewBoardState),
+  [_, OpponentPiecesAfterGeneration] = NewBoardState,
+  compute_pieces_difference(OpponentPiecesBeforeMove,
+      OpponentPiecesAfterGeneration, Score).
+compute_score(self_preservation, BoardStateAfterMove,  Score) :-
+  [PiecesAfterMove, _] = BoardStateAfterMove,
+  next_generation(BoardStateAfterMove, NewBoardState),
+  [PlayerPiecesAfterGeneration, _] = NewBoardState,
+  compute_pieces_difference(PlayerPiecesAfterGeneration,
+      PiecesAfterMove, Score).
+compute_score(land_grab, BoardStateAfterMove,  Score) :-
+  next_generation(BoardStateAfterMove, NewBoardState),
+  [PlayerPiecesAfterGeneration, OpponentPiecesAfterGeneration] = NewBoardState,
+  compute_pieces_difference(PlayerPiecesAfterGeneration,
+      OpponentPiecesAfterGeneration, Score).
+
+compute_pieces_difference(PlayerPieces1, PlayerPieces2, Score) :-
+  length(PlayerPieces1, NumPlayer1Pieces),
+  length(PlayerPieces2, NumPlayer2Pieces),
+  Score is NumPlayer1Pieces - NumPlayer2Pieces.
+
 % ------------------------ CREATE ALL CONFIGS ---------------------------------
 
 % Gets all the possible configs obtainable for a specific player given a board.
-% A CONFIGURATION is a 2 list element consisting of a move represented as 
-% [r1,c1,r2,c2] where (r1,c1) represent the piece position before moving and 
-% (r2,c2) after moving. The second element is the new board obtained 
+% A CONFIGURATION is a 2 list element consisting of a move represented as
+% [r1,c1,r2,c2] where (r1,c1) represent the piece position before moving and
+% (r2,c2) after moving. The second element is the new board obtained
 % after performing the move.
 
 get_all_configs_for_player('b', [PlayerPieces, OpponentPieces], AllConfigs) :-
   findall([Move, [NewPlayerPieces, OpponentPieces]],
-          get_configs(PlayerPieces, OpponentPieces, Move, NewPlayerPieces),
-	      AllConfigs).
+          perform_moves(PlayerPieces, OpponentPieces, Move, NewPlayerPieces),
+	        AllConfigs).
 get_all_configs_for_player('r', [OpponentPieces, PlayerPieces], AllConfigs) :-
   findall([Move, [OpponentPieces, NewPlayerPieces]],
-          get_configs(PlayerPieces, OpponentPieces, Move, NewPlayerPieces), 
-	      AllConfigs).
+          perform_moves(PlayerPieces, OpponentPieces, Move, NewPlayerPieces),
+	        AllConfigs).
 
-get_configs(PlayerPieces, OpponentPieces, Move, NewPlayerPieces) :-
-  get_valid_move(PlayerPieces, OpponentPieces, Move),
+perform_moves(PlayerPieces, OpponentPieces, Move, NewPlayerPieces) :-
+  get_valid_moves(PlayerPieces, OpponentPieces, Move),
   alter_board(Move, PlayerPieces, NewPlayerPieces).
 
-get_valid_move(PlayerPieces, OpponentPieces, Move) :-
+get_valid_moves(PlayerPieces, OpponentPieces, Move) :-
   member([A,B], PlayerPieces),
   neighbour_position(A,B,[NewA, NewB]),
-  Move = [A, B, NewA, NewB],
-  check_valid_move(NewA, NewB, PlayerPieces, OpponentPieces).
+  check_valid_move(NewA, NewB, PlayerPieces, OpponentPieces),
+  Move = [A, B, NewA, NewB].
 
 check_valid_move(NewA, NewB, PlayerPieces, OpponentPieces) :-
   \+ member([NewA,NewB], PlayerPieces),
@@ -331,6 +300,6 @@ check_valid_move(NewA, NewB, PlayerPieces, OpponentPieces) :-
 
 % DEBUGGING
 print_configs([]).
-print_configs([[Move, Board] | R]) :- 
+print_configs([[Move, Board] | R]) :-
   format('~w~n~w~n~n', [Move, Board]),
   print_configs(R).
