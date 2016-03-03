@@ -32,6 +32,14 @@ test_land_grab :-
   BluePieces = [ [2,2], [3,1], [4,1] ],
   RedPieces = [ [1,3], [1,4] ],
   StartingBoard = [BluePieces, RedPieces],
-  self_preservation('b', StartingBoard, _, Move),
+  land_grab('b', StartingBoard, _, Move),
+  Expected = [2,2,3,2],
+  format('~nTest4~nExpected :~n~w~nFound:~n~w~n~n', [Expected, Move]).
+
+test_minimax :-
+  BluePieces = [ [2,2], [3,1], [4,1] ],
+  RedPieces = [ [1,3], [1,4] ],
+  StartingBoard = [BluePieces, RedPieces],
+  minimax('b', StartingBoard, _, Move),
   Expected = [2,2,3,2],
   format('~nTest4~nExpected :~n~w~nFound:~n~w~n~n', [Expected, Move]).
