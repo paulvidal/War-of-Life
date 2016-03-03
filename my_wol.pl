@@ -202,7 +202,7 @@ get_min(PlayerColour, [Config | Configs], CurrentMaxScore,
 % Get the best score possible from the opponent point of view (performs
 % alpha-beta pruning as we stop if we see that Score >= CurrentWorstScore)
 minimise_player_chance(Score, CurrentWorstScore, _, 100) :-
-  Score >= CurrentWorstScore.
+  Score >= CurrentWorstScore, !.
 minimise_player_chance(Score, _, CurrentMaxScore, Score) :-
   Score > CurrentMaxScore.
 minimise_player_chance(Score, _, CurrentMaxScore, CurrentMaxScore) :-
