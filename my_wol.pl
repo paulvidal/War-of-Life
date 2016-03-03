@@ -185,12 +185,12 @@ maximise_player_chance(MinScore, _, CurrentBestMinScore, CurrentBestConfig,
 % as if we find a score superior to the worst score, it would mean the opponent
 % can acheive an better move then the worst we found so we don't want continue
 % searching as it is not in our interest to perform the first move chosen
-minimise('r', [OpponentPieces, []], _, MaxScore) :-
-  length(OpponentPieces, Score),
-  MaxScore is (- Score), !.
-minimise('b', [[], OpponentPieces], _, MaxScore) :-
-  length(OpponentPieces, Score),
-  MaxScore is (- Score), !.
+% minimise('r', [OpponentPieces, []], _, MaxScore) :-
+%   length(OpponentPieces, Score),
+%   MaxScore is (- Score), !.
+% minimise('b', [[], OpponentPieces], _, MaxScore) :-
+%   length(OpponentPieces, Score),
+%   MaxScore is (- Score), !.
 minimise(PlayerColour, BoardState, CurrentWorstScore, MaxScore) :-
   get_all_configs(PlayerColour, BoardState, AllConfigs),
   get_min(PlayerColour, AllConfigs, -100, CurrentWorstScore, MaxScore).
