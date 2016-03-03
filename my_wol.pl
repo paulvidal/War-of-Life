@@ -185,24 +185,25 @@ maximise_player_chance(MinScore, _, CurrentBestMinScore, CurrentBestConfig,
 % as if we find a score superior to the worst score, it would mean the opponent
 % can acheive an better move then the worst we found so we don't want continue
 % searching as it is not in our interest to perform the first move chosen
-% minimise('r', [OpponentPieces, []], _, MaxScore) :-
-%   length(OpponentPieces, Score),
-%   MaxScore is (- Score), !.
-% minimise('b', [[], OpponentPieces], _, MaxScore) :-
-%   length(OpponentPieces, Score),
-%   MaxScore is (- Score), !.
+minimise('r', [OpponentPieces, []], _, MaxScore) :-
+   length(OpponentPieces, Score),
+   MaxScore is (- Score), !.
+minimise('b', [[], OpponentPieces], _, MaxScore) :-
+   length(OpponentPieces, Score),
+   MaxScore is (- Score), !.
 minimise(PlayerColour, BoardState, CurrentWorstScore, MaxScore) :-
   get_all_configs(PlayerColour, BoardState, AllConfigs),
   get_min(PlayerColour, AllConfigs, -100, CurrentWorstScore, MaxScore).
 
 get_min(_, [], MaxScore, _, MaxScore).
+% Prune the search if the score is of a 100 (Score was >= CurrentWorstScore)
+get_min(_, _, 100, _, 100) :- !.
 get_min(PlayerColour, [Config | Configs], CurrentMaxScore,
     CurrentWorstScore, MaxScore) :-
   [_, BoardStateAfterMove] = Config,
   compute_score(land_grab, PlayerColour, BoardStateAfterMove, Score),
   minimise_player_chance(Score, CurrentWorstScore,
       CurrentMaxScore, NewCurrentBestMaxScore),
-  prune_search(NewCurrentBestMaxScore, MaxScore),
   get_min(PlayerColour, Configs, NewCurrentBestMaxScore,
       CurrentWorstScore, MaxScore).
 
@@ -214,12 +215,6 @@ minimise_player_chance(Score, _, CurrentMaxScore, Score) :-
   Score > CurrentMaxScore.
 minimise_player_chance(Score, _, CurrentMaxScore, CurrentMaxScore) :-
   Score =< CurrentMaxScore.
-
-% Stop the search if the score is of a 100 (Score was >= CurrentWorstScore)
-prune_search(NewCurrentBestMaxScore, NewCurrentBestMaxScore) :-
-  NewCurrentBestMaxScore == 100.
-prune_search(NewCurrentBestMaxScore, _) :-
-  NewCurrentBestMaxScore \= 100.
 
 % Swap players in order to perform opponent move
 swap_players('b', 'r').

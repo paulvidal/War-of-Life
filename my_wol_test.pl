@@ -2,7 +2,8 @@ run_test :-
   test_bloodlust_1,
   test_bloodlust_2,
   test_self_preservation,
-  test_land_grab.
+  test_land_grab,
+  test_minimax.
 
 test_bloodlust_1 :-
   BluePieces = [ [2,2], [3,2], [3,3] ],
@@ -42,4 +43,4 @@ test_minimax :-
   StartingBoard = [BluePieces, RedPieces],
   minimax('b', StartingBoard, _, Move),
   Expected = [2,2,3,2],
-  format('~nTest4~nExpected :~n~w~nFound:~n~w~n~n', [Expected, Move]).
+  format('~nTest5~nExpected :~n~w~nFound:~n~w~n~n', [Expected, Move]).
