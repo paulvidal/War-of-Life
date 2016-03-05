@@ -45,8 +45,6 @@ simulate_games(N, S1, S2, WinsP1, WinsP2, Draws, LongestGame, ShortestGame,
   NewTotalGameLength is TotalGameLength + NumMoves,
   NewTotalGameTime is TotalGameTime + TimeTaken,
 
-  print_progression(NewN, TotalGames),
-
   % Continue recursively to simulate game until the base case is reached
   simulate_games(NewN, S1, S2, NewWinsP1, NewWinsP2, NewDraws, NewLongestGame,
     NewShortestGame, NewTotalGameLength, NewTotalGameTime, TotalGames).
@@ -92,11 +90,6 @@ get_shortest_game(NumMoves, ShortestGame, NumMoves) :-
   ShortestGame > NumMoves.
 get_shortest_game(NumMoves, ShortestGame, ShortestGame) :-
   ShortestGame =< NumMoves.
-
-% print_progression is a helper function printing on the sreen the number
-% of games left to play
-print_progression(N, TotalGames) :-
-  format('~w out of ~w~n', [N, TotalGames]).
 
 % ---------------------------------------------------------------------------
 % ---------------------------- BLOODLUST ------------------------------------
@@ -294,10 +287,3 @@ get_valid_moves(PlayerPieces, OpponentPieces, Move) :-
 check_valid_move(NewA, NewB, PlayerPieces, OpponentPieces) :-
   \+ member([NewA,NewB], PlayerPieces),
   \+ member([NewA,NewB], OpponentPieces).
-
-% DEBUGGING
-print_configs([]).
-print_configs([[Move, Board] | R]) :-
-  next_generation(Board, NewBoard),
-  format('~w~n~w~n~n', [Move, NewBoard]),
-  print_configs(R).
